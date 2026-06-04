@@ -1,3 +1,23 @@
+server:
+  port: ${ORDER_SERVICE_PORT:8083}
+
 spring:
   application:
     name: orderservice
+  datasource:
+    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:store}?currentSchema=${DATABASE_SCHEMA:order_schema}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  liquibase:
+    change-log: classpath:db/db.changelog-master.xml
+    url: jdbc:postgresql://${DATABASE_HOST:localhost}:${DATABASE_PORT:5432}/${DATABASE_NAME:store}?currentSchema=${DATABASE_SCHEMA:order_schema}
+    default-schema: ${DATABASE_SCHEMA:order_schema}
+    user: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
