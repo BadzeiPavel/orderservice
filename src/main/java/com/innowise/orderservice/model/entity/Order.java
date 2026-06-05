@@ -1,5 +1,6 @@
 package com.innowise.orderservice.model.entity;
 
+import com.innowise.orderservice.exception.OrderServiceException;
 import com.innowise.orderservice.model.enums.Status;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -53,4 +54,14 @@ public class Order extends BaseEntity {
   @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private Set<OrderItem> orderItems = new HashSet<>();
+
+  public void setStatus(Status newStatus) {
+    if (status != null &&
+        status != newStatus &&
+        !status.canTransitionTo(newStatus)) {
+      throw new OrderServiceException(
+          "Cannot change status " + status + " to " + newStatus);
+    }
+    status = newStatus;
+  }
 }
