@@ -1,6 +1,6 @@
 package com.innowise.orderservice.service;
 
-import com.innowise.orderservice.model.dto.OrderDto;
+import com.innowise.orderservice.model.dto.OrderWithUserDto;
 import com.innowise.orderservice.model.dto.request.OrderCreationDto;
 import com.innowise.orderservice.model.dto.request.OrderUpdateDto;
 import java.time.LocalDateTime;
@@ -11,16 +11,16 @@ import org.springframework.data.domain.Pageable;
 
 public interface OrderService {
 
-  OrderDto createOrder(OrderCreationDto creationDto);
+  OrderWithUserDto createOrder(OrderCreationDto creationDto);
 
-  OrderDto getOrderById(UUID id);
+  OrderWithUserDto getOrderById(UUID id);
 
-  Page<OrderDto> getOrdersFiltered(LocalDateTime startDate, LocalDateTime endDate,
+  Page<OrderWithUserDto> getOrdersFiltered(LocalDateTime startDate, LocalDateTime endDate,
       List<String> statuses, Pageable pageable);
 
-  Page<OrderDto> getOrdersByUserId(UUID userId, Pageable pageable);
+  Page<OrderWithUserDto> getOrdersByUserId(UUID userId, Pageable pageable);
 
-  OrderDto updateOrder(UUID id, OrderUpdateDto updateDto);
+  OrderWithUserDto updateOrder(UUID id, OrderUpdateDto updateDto);
 
   void deleteOrder(UUID id);
 }

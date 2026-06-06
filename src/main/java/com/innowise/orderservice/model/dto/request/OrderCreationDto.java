@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public record OrderCreationDto(
     @NotNull
-    UUID userId,
+    String email,
 
     @NotEmpty(message = "Order must contain at least one item")
     List<OrderItemCreationDto> items

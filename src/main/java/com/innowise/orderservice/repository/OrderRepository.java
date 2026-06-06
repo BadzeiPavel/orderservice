@@ -22,9 +22,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID>,
   @EntityGraph(attributePaths = "orderItems")
   Page<Order> findByUserIdAndDeletedFalse(UUID userId, Pageable pageable);
 
-  @EntityGraph(attributePaths = "orderItems")
-  Page<Order> findAllOrders(Specification<Order> spec, Pageable pageable);
-
   @Modifying
   @Query("UPDATE Order o SET o.deleted = true WHERE o.id = :id")
   int softDeleteById(@Param("id") UUID id);

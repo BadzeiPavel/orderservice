@@ -1,8 +1,11 @@
 package com.innowise.orderservice.service.impl;
 
+import com.innowise.commonstarter.model.dto.UserDto;
+import com.innowise.orderservice.client.UserServiceClient;
 import com.innowise.orderservice.exception.OrderServiceException;
 import com.innowise.orderservice.mapper.OrderMapper;
 import com.innowise.orderservice.model.dto.OrderDto;
+import com.innowise.orderservice.model.dto.OrderWithUserDto;
 import com.innowise.orderservice.model.dto.request.OrderCreationDto;
 import com.innowise.orderservice.model.dto.request.OrderItemCreationDto;
 import com.innowise.orderservice.model.dto.request.OrderUpdateDto;
@@ -14,6 +17,7 @@ import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
 import com.innowise.orderservice.repository.specification.OrderSpecification;
 import com.innowise.orderservice.service.OrderService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -37,55 +41,52 @@ public class OrderServiceImpl implements OrderService {
   private final OrderRepository orderRepository;
   private final ItemRepository itemRepository;
   private final OrderMapper orderMapper;
+  private final UserServiceClient userServiceClient;
 
   @Override
-  public OrderDto createOrder(OrderCreationDto creationDto) {
-    Order order = Order.builder()
-        .userId(creationDto.userId())
-        .status(Status.CREATED)
-        .totalPrice(BigDecimal.ZERO)
-        .build();
-
-    buildOrderItems(order, creationDto.items());
-
-    order = orderRepository.save(order);
-    return orderMapper.toDto(order);
+  public OrderWithUserDto createOrder(OrderCreationDto creationDto) {
+    UserDto user = fetchUserByEmail(creationDto.email());
+    OrderDto orderDto = createOrderInternal(creationDto, user.id());
+    return new OrderWithUserDto(orderDto, user);
   }
 
   @Override
   @Transactional(readOnly = true)
-  public OrderDto getOrderById(UUID id) {
-    return orderMapper.toDto(findOrderById(id));
+  public OrderWithUserDto getOrderById(UUID id) {
+    OrderDto orderDto = orderMapper.toDto(findOrderById(id));
+    UserDto user = fetchUserById(orderDto.userId());
+    return new OrderWithUserDto(orderDto, user);
   }
 
   @Override
   @Transactional(readOnly = true)
-  public Page<OrderDto> getOrdersFiltered(LocalDateTime startDate, LocalDateTime endDate,
+  public Page<OrderWithUserDto> getOrdersFiltered(LocalDateTime startDate, LocalDateTime endDate,
       List<String> statuses, Pageable pageable) {
     Specification<Order> spec = OrderSpecification.withFilters(startDate, endDate, statuses);
-    return orderRepository.findAllOrders(spec, pageable).map(orderMapper::toDto);
+    Page<OrderDto> orderPage = orderRepository.findAll(spec, pageable)
+        .map(orderMapper::toDto);
+    return orderPage.map(dto -> {
+      UserDto user = fetchUserById(dto.userId());
+      return new OrderWithUserDto(dto, user);
+    });
   }
 
   @Override
   @Transactional(readOnly = true)
-  public Page<OrderDto> getOrdersByUserId(UUID userId, Pageable pageable) {
-    return orderRepository.findByUserIdAndDeletedFalse(userId, pageable)
+  public Page<OrderWithUserDto> getOrdersByUserId(UUID userId, Pageable pageable) {
+    Page<OrderDto> orderPage = orderRepository.findByUserIdAndDeletedFalse(userId, pageable)
         .map(orderMapper::toDto);
+    return orderPage.map(dto -> {
+      UserDto user = fetchUserById(dto.userId());
+      return new OrderWithUserDto(dto, user);
+    });
   }
 
   @Override
-  public OrderDto updateOrder(UUID id, OrderUpdateDto updateDto) {
-    Order order = findOrderById(id);
-    order.setStatus(updateDto.status());
-
-    if (updateDto.items() != null) {
-      order.getOrderItems().clear();
-
-      buildOrderItems(order, updateDto.items());
-    }
-
-    order = orderRepository.save(order);
-    return orderMapper.toDto(order);
+  public OrderWithUserDto updateOrder(UUID id, OrderUpdateDto updateDto) {
+    OrderDto orderDto = updateOrderInternal(id, updateDto);
+    UserDto user = fetchUserById(orderDto.userId());
+    return new OrderWithUserDto(orderDto, user);
   }
 
   @Override
@@ -94,6 +95,57 @@ public class OrderServiceImpl implements OrderService {
     if (rows == 0) {
       throw new OrderServiceException("Order not found with id: " + id);
     }
+  }
+
+  private OrderDto createOrderInternal(OrderCreationDto creationDto, UUID userId) {
+    Order order = Order.builder()
+        .userId(userId)
+        .status(Status.CREATED)
+        .totalPrice(BigDecimal.ZERO)
+        .build();
+    buildOrderItems(order, creationDto.items());
+    order = orderRepository.save(order);
+    return orderMapper.toDto(order);
+  }
+
+  private OrderDto updateOrderInternal(UUID id, OrderUpdateDto updateDto) {
+    Order order = findOrderById(id);
+    order.setStatus(updateDto.status());
+    if (updateDto.items() != null) {
+      order.getOrderItems().clear();
+      buildOrderItems(order, updateDto.items());
+    }
+    order = orderRepository.save(order);
+    return orderMapper.toDto(order);
+  }
+
+
+  @CircuitBreaker(name = "userService", fallbackMethod = "userFallbackByEmail")
+  private UserDto fetchUserByEmail(String email) {
+    UserDto user = userServiceClient.getUserByEmail(email).getBody();
+    if (user == null) {
+      throw new OrderServiceException("User not found with email: " + email);
+    }
+    return user;
+  }
+
+  @CircuitBreaker(name = "userService", fallbackMethod = "userFallbackById")
+  private UserDto fetchUserById(UUID userId) {
+    UserDto user = userServiceClient.getUserById(userId).getBody();
+    if (user == null) {
+      throw new OrderServiceException("User not found with id: " + userId);
+    }
+    return user;
+  }
+
+  private UserDto userFallbackByEmail(String email) {
+    throw new OrderServiceException(
+        "User service unavailable, cannot create order with user email: " + email);
+  }
+
+  private UserDto userFallbackById(UUID userId) {
+    return new UserDto(userId, "Unknown", "", null, "no-email@example.com", false, null, null,
+        null);
   }
 
   private void buildOrderItems(Order order, List<OrderItemCreationDto> itemDtos) {

@@ -1,6 +1,10 @@
 server:
   port: ${ORDER_SERVICE_PORT:8083}
 
+service:
+  user-service:
+    url: http://localhost:8081
+
 spring:
   application:
     name: orderservice
@@ -21,3 +25,14 @@ spring:
     default-schema: ${DATABASE_SCHEMA:order_schema}
     user: ${DATABASE_USERNAME:postgres}
     password: ${DATABASE_PASSWORD:postgres}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
