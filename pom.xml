@@ -25,6 +25,7 @@
     <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
     <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
     <spring-cloud.version>2025.0.0</spring-cloud.version>
+    <org.wiremock.integrations.version>4.2.0</org.wiremock.integrations.version>
     <com.innowise.version>0.0.1-SNAPSHOT</com.innowise.version>
   </properties>
 
@@ -123,6 +124,12 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock.integrations</groupId>
+      <artifactId>wiremock-spring-boot</artifactId>
+      <version>${org.wiremock.integrations.version}</version>
       <scope>test</scope>
     </dependency>
 
