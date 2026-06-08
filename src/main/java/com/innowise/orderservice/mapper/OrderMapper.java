@@ -14,7 +14,7 @@ public interface OrderMapper {
   @Mapping(target = "items", source = "orderItems")
   OrderDto toDto(Order order);
 
-  default OrderItemResponseDto mapOrderItem(OrderItem orderItem) {
+  default OrderItemResponseDto toOrderItemResponseDto(OrderItem orderItem) {
     return new OrderItemResponseDto(
         orderItem.getItem().getId(),
         orderItem.getItem().getName(),

@@ -1,4 +1,4 @@
-package com.innowise.orderservice.config;
+package com.innowise.orderservice.config.rest;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;

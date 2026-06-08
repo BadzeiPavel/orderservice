@@ -1,6 +1,5 @@
 package com.innowise.orderservice.controller;
 
-import com.innowise.orderservice.model.dto.OrderDto;
 import com.innowise.orderservice.model.dto.OrderWithUserDto;
 import com.innowise.orderservice.model.dto.request.OrderCreationDto;
 import com.innowise.orderservice.model.dto.request.OrderUpdateDto;

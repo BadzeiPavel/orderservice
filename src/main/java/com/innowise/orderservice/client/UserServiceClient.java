@@ -1,7 +1,7 @@
 package com.innowise.orderservice.client;
 
 import com.innowise.commonstarter.model.dto.UserDto;
-import com.innowise.orderservice.config.FeignConfig;
+import com.innowise.orderservice.config.rest.FeignConfig;
 import java.util.UUID;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;

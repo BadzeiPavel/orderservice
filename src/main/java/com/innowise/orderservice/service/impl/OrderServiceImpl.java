@@ -20,6 +20,7 @@ import com.innowise.orderservice.service.OrderService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -177,7 +178,7 @@ public class OrderServiceImpl implements OrderService {
 
   private void populateItemsAndTotal(Order order, List<OrderItemCreationDto> itemDtos,
       Map<UUID, Item> itemMap) {
-    Set<OrderItem> orderItems = new HashSet<>();
+    List<OrderItem> orderItems = new ArrayList<>();
     BigDecimal total = BigDecimal.ZERO;
 
     for (OrderItemCreationDto dto : itemDtos) {
