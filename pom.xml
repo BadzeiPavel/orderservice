@@ -26,7 +26,7 @@
     <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
     <spring-cloud.version>2025.0.0</spring-cloud.version>
     <org.wiremock.integrations.version>4.2.0</org.wiremock.integrations.version>
-    <com.innowise.version>0.0.1-SNAPSHOT</com.innowise.version>
+    <com.innowise.version>main-SNAPSHOT</com.innowise.version>
   </properties>
 
   <dependencies>
@@ -134,11 +134,18 @@
     </dependency>
 
     <dependency>
-      <groupId>com.innowise</groupId>
+      <groupId>com.github.BadzeiPavel</groupId>
       <artifactId>common-starter</artifactId>
       <version>${com.innowise.version}</version>
     </dependency>
   </dependencies>
+
+  <repositories>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
 
   <dependencyManagement>
     <dependencies>

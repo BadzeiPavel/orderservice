@@ -1,0 +1,40 @@
+service:
+  user-service:
+    url: http://localhost:8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/store?currentSchema=order_schema
+    username: postgres
+    password: postgres
+  liquibase:
+    change-log: classpath:db/db.changelog-master.xml
+    default-schema: order_schema
+    url: jdbc:postgresql://postgres:5432/store?currentSchema=order_schema
+    user: postgres
+    password: postgres
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION}
