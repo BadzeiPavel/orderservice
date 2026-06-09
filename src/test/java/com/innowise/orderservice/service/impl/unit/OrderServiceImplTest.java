@@ -70,7 +70,7 @@ class OrderServiceImplTest {
   void createOrder_shouldSucceed() {
     OrderCreationDto creationDto = new OrderCreationDto("john@example.com",
         List.of(new OrderItemCreationDto(itemId1, 2),
-                new OrderItemCreationDto(itemId2, 1)));
+            new OrderItemCreationDto(itemId2, 1)));
 
     when(userServiceClient.getUserByEmail("john@example.com"))
         .thenReturn(ResponseEntity.ok(userDto));
