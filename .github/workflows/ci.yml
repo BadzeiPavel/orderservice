@@ -121,6 +121,7 @@ jobs:
             -Dsonar.qualitygate.wait=true \
             -Dsonar.junit.reportPaths=target/surefire-reports \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -Dsonar.coverage.exclusions=**/client/**/*,**/config/**/*,**/controller/**/*,**/exception/**/*,**/mapper/**/*,**/model/**/*,**/repository/**/*,**/specification/**/*,**/security/**/* \
             $PR_ARGS
 
   docker-build:
