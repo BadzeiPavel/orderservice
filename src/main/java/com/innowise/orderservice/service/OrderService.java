@@ -15,10 +15,8 @@ public interface OrderService {
 
   OrderWithUserDto getOrderById(UUID id);
 
-  Page<OrderWithUserDto> getOrdersFiltered(LocalDateTime startDate, LocalDateTime endDate,
-      List<String> statuses, Pageable pageable);
-
-  Page<OrderWithUserDto> getOrdersByUserId(UUID userId, Pageable pageable);
+  Page<OrderWithUserDto> getOrdersFiltered(UUID userId, LocalDateTime startDate,
+      LocalDateTime endDate, List<String> statuses, Pageable pageable);
 
   OrderWithUserDto updateOrder(UUID id, OrderUpdateDto updateDto);
 

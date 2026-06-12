@@ -3,7 +3,10 @@ package com.innowise.orderservice.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innowise.commonstarter.model.dto.response.ErrorResponse;
+import com.innowise.orderservice.exception.OrderNotFoundException;
 import com.innowise.orderservice.exception.OrderServiceException;
+import com.innowise.orderservice.exception.ServiceUnavailableException;
+import com.innowise.orderservice.exception.UserNotFoundException;
 import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +20,27 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+  @ExceptionHandler(OrderNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleNotFound(OrderNotFoundException ex,
+      HttpServletRequest request) {
+    return buildResponse("Not Found", ex.getMessage(), ex.getClass().getSimpleName(),
+        HttpStatus.NOT_FOUND, request);
+  }
+
+  @ExceptionHandler(UserNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex,
+      HttpServletRequest request) {
+    return buildResponse("Not Found", ex.getMessage(), ex.getClass().getSimpleName(),
+        HttpStatus.NOT_FOUND, request);
+  }
+
+  @ExceptionHandler(ServiceUnavailableException.class)
+  public ResponseEntity<ErrorResponse> handleServiceUnavailable(ServiceUnavailableException ex,
+      HttpServletRequest request) {
+    return buildResponse("Service Unavailable", ex.getMessage(), ex.getClass().getSimpleName(),
+        HttpStatus.SERVICE_UNAVAILABLE, request);
+  }
 
   @ExceptionHandler(OrderServiceException.class)
   public ResponseEntity<ErrorResponse> handleOrderService(OrderServiceException ex,

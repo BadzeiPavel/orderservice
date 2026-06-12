@@ -31,10 +31,6 @@ public abstract class BaseIntegrationTest {
       .withUsername("test")
       .withPassword("test");
 
-  @Container
-  static final GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine")
-      .withExposedPorts(6379);
-
   @BeforeAll
   static void startWireMock() {
     wireMock.start();
@@ -60,15 +56,14 @@ public abstract class BaseIntegrationTest {
     registry.add("spring.liquibase.password", postgres::getPassword);
     registry.add("spring.liquibase.default-schema", () -> "order_schema");
 
-    registry.add("spring.data.redis.host", redis::getHost);
-    registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
-
     registry.add("service.user-service.url", () -> "http://localhost:" + wireMock.port());
 
     registry.add("jwt.secret",
         () -> "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2");
     registry.add("jwt.access-token-expiration", () -> "3600000");
     registry.add("jwt.refresh-token-expiration", () -> "86400000");
+
+    registry.add("service.user-service.url", () -> "http://localhost:" + wireMock.port());
   }
 
   private static void createSchema(String schemaName) {

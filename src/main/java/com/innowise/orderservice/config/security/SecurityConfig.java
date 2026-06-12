@@ -30,7 +30,7 @@ public class SecurityConfig {
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/actuator/health").permitAll()
-            .requestMatchers("/api/v1/orders").permitAll()
+            .requestMatchers("/api/v1/orders/**").permitAll()
             .anyRequest().authenticated()
         )
         .addFilterBefore(new JwtTokenFilter(jwtProvider),

@@ -3,7 +3,7 @@ server:
 
 service:
   user-service:
-    url: http://localhost:8081
+    url: ${USER_SERVICE_URL:http://localhost:8081}
 
 spring:
   application:

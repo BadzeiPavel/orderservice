@@ -49,19 +49,10 @@ public class Order extends BaseEntity {
   private BigDecimal totalPrice;
 
   @Column(name = "deleted", nullable = false)
+  @Builder.Default
   private boolean deleted = false;
 
   @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<OrderItem> orderItems = new ArrayList<>();
-
-  public void setStatus(Status newStatus) {
-    if (status != null &&
-        status != newStatus &&
-        !status.canTransitionTo(newStatus)) {
-      throw new OrderServiceException(
-          "Cannot change status " + status + " to " + newStatus);
-    }
-    status = newStatus;
-  }
 }

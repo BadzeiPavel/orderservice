@@ -1,11 +1,11 @@
 package com.innowise.orderservice.model.dto.request;
 
 import com.innowise.orderservice.model.enums.Status;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record OrderUpdateDto(
-    @NotBlank Status status,
+    @NotNull Status status,
     List<OrderItemCreationDto> items
 ) {
 

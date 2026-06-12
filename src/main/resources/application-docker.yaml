@@ -1,18 +1,18 @@
 service:
   user-service:
-    url: http://localhost:8081
+    url: ${USER_SERVICE_URL:http://localhost:8081}
 
 spring:
   datasource:
-    url: jdbc:postgresql://postgres:5432/store?currentSchema=order_schema
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://${DATABASE_HOST:postgres}:${DATABASE_PORT:5432}/${DATABASE_NAME:store}?currentSchema=${DATABASE_SCHEMA:order_schema}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
   liquibase:
     change-log: classpath:db/db.changelog-master.xml
-    default-schema: order_schema
-    url: jdbc:postgresql://postgres:5432/store?currentSchema=order_schema
-    user: postgres
-    password: postgres
+    default-schema: ${DATABASE_SCHEMA:order_schema}
+    url: jdbc:postgresql://${DATABASE_HOST:postgres}:${DATABASE_PORT:5432}/${DATABASE_NAME:store}?currentSchema=${DATABASE_SCHEMA:order_schema}
+    user: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
 
 resilience4j:
   circuitbreaker:

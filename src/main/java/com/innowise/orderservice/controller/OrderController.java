@@ -44,18 +44,13 @@ public class OrderController {
 
   @GetMapping
   public ResponseEntity<Page<OrderWithUserDto>> getOrdersFiltered(
+      @RequestParam(required = false) UUID userId,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
       @RequestParam(required = false) List<String> statuses,
       Pageable pageable) {
     return ResponseEntity.ok(
-        orderService.getOrdersFiltered(startDate, endDate, statuses, pageable));
-  }
-
-  @GetMapping("/users/{userId}")
-  public ResponseEntity<Page<OrderWithUserDto>> getOrdersByUserId(@PathVariable UUID userId,
-      Pageable pageable) {
-    return ResponseEntity.ok(orderService.getOrdersByUserId(userId, pageable));
+        orderService.getOrdersFiltered(userId, startDate, endDate, statuses, pageable));
   }
 
   @PatchMapping("/{id}")

@@ -1,11 +1,15 @@
 package com.innowise.orderservice.service.impl.integration;
 
+import com.innowise.commonstarter.model.dto.UserDto;
+import com.innowise.orderservice.exception.ServiceUnavailableException;
 import com.innowise.orderservice.model.dto.OrderWithUserDto;
 import com.innowise.orderservice.model.dto.request.OrderCreationDto;
+import com.innowise.orderservice.model.dto.request.OrderUpdateDto;
 import com.innowise.orderservice.model.entity.Item;
 import com.innowise.orderservice.model.enums.Status;
 import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
+import com.innowise.orderservice.service.UserServiceGateway;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import java.math.BigDecimal;
@@ -15,18 +19,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class OrderControllerIT extends BaseControllerIT {
@@ -35,6 +37,9 @@ class OrderControllerIT extends BaseControllerIT {
   private OrderRepository orderRepository;
   @Autowired
   private ItemRepository itemRepository;
+
+  @MockitoBean
+  private UserServiceGateway userServiceGateway;
 
   private Item item1, item2;
   private final UUID userId = UUID.randomUUID();
@@ -49,33 +54,10 @@ class OrderControllerIT extends BaseControllerIT {
     item2 = itemRepository.save(
         Item.builder().name("USB cable").price(new BigDecimal("200.00")).build());
 
-    stubFor(get(urlPathEqualTo("/api/v1/users"))
-        .withQueryParam("email", equalTo(email))
-        .willReturn(aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(userJson())));
+    UserDto userDto = new UserDto(userId, "John", "Doe", null, email, true, null, null, null);
 
-    stubFor(get(urlPathMatching("/api/v1/users/.*"))
-        .willReturn(aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(userJson())));
-  }
-
-  private String userJson() {
-    return String.format("""
-        {
-            "id": "%s",
-            "name": "John",
-            "surname": "Doe",
-            "birthDate": null,
-            "email": "%s",
-            "active": true,
-            "createdAt": null,
-            "updatedAt": null,
-            "paymentCards": null
-        }""", userId, email);
+    when(userServiceGateway.fetchUserByEmail(email)).thenReturn(userDto);
+    when(userServiceGateway.fetchUserById(any(UUID.class))).thenReturn(userDto);
   }
 
   @Test
@@ -127,17 +109,56 @@ class OrderControllerIT extends BaseControllerIT {
   }
 
   @Test
-  void getOrdersByUserId_shouldReturnPage() {
+  void getOrdersByUserId_viaFilterParameter_shouldReturnPage() {
     OrderCreationDto dto = TestDataFactory.createOrderCreationDto(email,
         List.of(TestDataFactory.createOrderItemDto(item1.getId(), 1)));
     restTemplate.postForEntity(baseUrl() + "/api/v1/orders", dto, OrderWithUserDto.class);
 
     ResponseEntity<String> resp = restTemplate.exchange(
-        baseUrl() + "/api/v1/orders/users/" + userId + "?page=0&size=10",
+        baseUrl() + "/api/v1/orders?userId=" + userId + "&page=0&size=10",
         HttpMethod.GET, null, String.class);
     assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
     DocumentContext json = JsonPath.parse(resp.getBody());
     assertThat(json.read("content.length()", Integer.class)).isEqualTo(1);
+  }
+
+  @Test
+  void updateOrder_shouldReturn200() {
+    OrderCreationDto dto = TestDataFactory.createOrderCreationDto(email,
+        List.of(TestDataFactory.createOrderItemDto(item1.getId(), 1)));
+    ResponseEntity<OrderWithUserDto> created = restTemplate.postForEntity(
+        baseUrl() + "/api/v1/orders", dto, OrderWithUserDto.class);
+    Assertions.assertNotNull(created.getBody());
+    UUID orderId = created.getBody().order().id();
+
+    OrderUpdateDto updateDto = TestDataFactory.createOrderUpdateDto(Status.CONFIRMED);
+    HttpEntity<OrderUpdateDto> request = createEntity(updateDto);
+    ResponseEntity<OrderWithUserDto> resp = restTemplate.exchange(
+        baseUrl() + "/api/v1/orders/" + orderId, HttpMethod.PATCH, request,
+        OrderWithUserDto.class);
+    assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(resp.getBody()).isNotNull();
+    assertThat(resp.getBody().order().status()).isEqualTo(Status.CONFIRMED);
+  }
+
+  @Test
+  void updateOrder_whenUserServiceFails_shouldReturn503() {
+    when(userServiceGateway.fetchUserById(any(UUID.class)))
+        .thenThrow(new ServiceUnavailableException("User service unavailable"));
+
+    OrderCreationDto createDto = TestDataFactory.createOrderCreationDto(email,
+        List.of(TestDataFactory.createOrderItemDto(item1.getId(), 1)));
+    ResponseEntity<OrderWithUserDto> created = restTemplate.postForEntity(
+        baseUrl() + "/api/v1/orders", createDto, OrderWithUserDto.class);
+    Assertions.assertNotNull(created.getBody());
+    UUID orderId = created.getBody().order().id();
+
+    OrderUpdateDto updateDto = new OrderUpdateDto(Status.CONFIRMED, null);
+    HttpEntity<OrderUpdateDto> request = createEntity(updateDto);
+    ResponseEntity<String> resp = restTemplate.exchange(
+        baseUrl() + "/api/v1/orders/" + orderId, HttpMethod.PATCH, request, String.class);
+
+    assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
   }
 
   @Test
@@ -155,6 +176,6 @@ class OrderControllerIT extends BaseControllerIT {
 
     ResponseEntity<String> getResp = restTemplate.exchange(
         baseUrl() + "/api/v1/orders/" + orderId, HttpMethod.GET, null, String.class);
-    assertThat(getResp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    assertThat(getResp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
   }
 }

@@ -9,7 +9,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @Profile("test")
-public class TestSecurityConfig {
+public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain testFilterChain(HttpSecurity http) throws Exception {
