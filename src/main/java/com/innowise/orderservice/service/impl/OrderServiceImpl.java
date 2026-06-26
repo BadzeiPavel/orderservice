@@ -1,6 +1,7 @@
 package com.innowise.orderservice.service.impl;
 
 import com.innowise.commonstarter.model.dto.UserDto;
+import com.innowise.commonstarter.model.enums.PaymentStatus;
 import com.innowise.orderservice.exception.OrderNotFoundException;
 import com.innowise.orderservice.exception.OrderServiceException;
 import com.innowise.orderservice.mapper.OrderMapper;
@@ -29,12 +30,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -96,6 +99,34 @@ public class OrderServiceImpl implements OrderService {
     if (rows == 0) {
       throw new OrderServiceException("Order not found with id: " + id);
     }
+  }
+
+  @Override
+  @Transactional
+  public void handlePaymentCompletion(UUID orderId, PaymentStatus paymentStatus) {
+    Order order = findOrderById(orderId);
+    Status newStatus;
+
+    switch (paymentStatus) {
+      case PaymentStatus.SUCCESS -> newStatus = Status.PAID;
+      case PaymentStatus.FAILED -> newStatus = Status.PAYMENT_FAILED;
+      default -> throw new OrderServiceException("Unsupported payment status: " + paymentStatus);
+    }
+
+    if (order.getStatus() == newStatus) {
+      log.info("Order {} already in status {}, skipping update", orderId, newStatus);
+      return;
+    }
+
+    if (!order.getStatus().canTransitionTo(newStatus)) {
+      throw new OrderServiceException(
+          "Cannot transition from " + order.getStatus() + " to " + newStatus);
+    }
+
+    order.setStatus(newStatus);
+    orderRepository.save(order);
+
+    log.info("Order {} status successfully set to {}", orderId, newStatus);
   }
 
   private OrderDto createOrderInternal(OrderCreationDto creationDto, UUID userId) {

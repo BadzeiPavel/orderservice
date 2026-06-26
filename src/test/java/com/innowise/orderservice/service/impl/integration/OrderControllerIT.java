@@ -131,14 +131,14 @@ class OrderControllerIT extends BaseControllerIT {
     Assertions.assertNotNull(created.getBody());
     UUID orderId = created.getBody().order().id();
 
-    OrderUpdateDto updateDto = TestDataFactory.createOrderUpdateDto(Status.CONFIRMED);
+    OrderUpdateDto updateDto = TestDataFactory.createOrderUpdateDto(Status.PAID);
     HttpEntity<OrderUpdateDto> request = createEntity(updateDto);
     ResponseEntity<OrderWithUserDto> resp = restTemplate.exchange(
         baseUrl() + "/api/v1/orders/" + orderId, HttpMethod.PATCH, request,
         OrderWithUserDto.class);
     assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(resp.getBody()).isNotNull();
-    assertThat(resp.getBody().order().status()).isEqualTo(Status.CONFIRMED);
+    assertThat(resp.getBody().order().status()).isEqualTo(Status.PAID);
   }
 
   @Test
@@ -153,7 +153,7 @@ class OrderControllerIT extends BaseControllerIT {
     Assertions.assertNotNull(created.getBody());
     UUID orderId = created.getBody().order().id();
 
-    OrderUpdateDto updateDto = new OrderUpdateDto(Status.CONFIRMED, null);
+    OrderUpdateDto updateDto = new OrderUpdateDto(Status.PAID, null);
     HttpEntity<OrderUpdateDto> request = createEntity(updateDto);
     ResponseEntity<String> resp = restTemplate.exchange(
         baseUrl() + "/api/v1/orders/" + orderId, HttpMethod.PATCH, request, String.class);

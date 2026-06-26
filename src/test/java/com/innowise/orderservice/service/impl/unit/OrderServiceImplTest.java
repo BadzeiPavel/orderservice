@@ -155,7 +155,7 @@ class OrderServiceImplTest {
   @Test
   void updateOrder_shouldChangeStatus() {
     Order order = buildOrder(Status.CREATED);
-    OrderUpdateDto updateDto = new OrderUpdateDto(Status.CONFIRMED, null);
+    OrderUpdateDto updateDto = new OrderUpdateDto(Status.PAID, null);
     when(orderRepository.findByIdAndDeletedFalse(orderId)).thenReturn(Optional.of(order));
     when(orderRepository.save(any(Order.class))).thenReturn(order);
     OrderDto orderDtoMock = mock(OrderDto.class);
@@ -189,7 +189,7 @@ class OrderServiceImplTest {
     UUID newItemId = UUID.randomUUID();
     Item newItem = Item.builder().id(newItemId).name("New").price(new BigDecimal("50.00")).build();
 
-    OrderUpdateDto updateDto = new OrderUpdateDto(Status.CONFIRMED,
+    OrderUpdateDto updateDto = new OrderUpdateDto(Status.PAID,
         List.of(new OrderItemCreationDto(newItemId, 3)));
 
     when(orderRepository.findByIdAndDeletedFalse(orderId)).thenReturn(Optional.of(order));
