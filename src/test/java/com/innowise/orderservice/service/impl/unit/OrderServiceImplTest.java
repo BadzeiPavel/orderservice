@@ -1,6 +1,7 @@
 package com.innowise.orderservice.service.impl.unit;
 
 import com.innowise.commonstarter.model.dto.UserDto;
+import com.innowise.commonstarter.model.enums.PaymentStatus;
 import com.innowise.orderservice.exception.OrderNotFoundException;
 import com.innowise.orderservice.exception.OrderServiceException;
 import com.innowise.orderservice.mapper.OrderMapper;
@@ -150,6 +151,39 @@ class OrderServiceImplTest {
     Page<OrderWithUserDto> result = orderService.getOrdersFiltered(null, null, null,
         List.of("CREATED"), PageRequest.of(0, 10));
     assertThat(result.getTotalElements()).isEqualTo(1);
+  }
+
+  @Test
+  void handlePaymentCompletion_shouldUpdateOrderToPaymentFailed_whenPaymentFails() {
+    // Given
+    Order order = new Order();
+    order.setId(orderId);
+    order.setStatus(Status.CREATED); // or any status that can transition to PAYMENT_FAILED
+    when(orderRepository.findByIdAndDeletedFalse(orderId)).thenReturn(Optional.of(order));
+
+    // When
+    orderService.handlePaymentCompletion(orderId, PaymentStatus.FAILED);
+
+    // Then
+    assertThat(order.getStatus()).isEqualTo(Status.PAYMENT_FAILED);
+    verify(orderRepository).save(order);
+    // The log line will be executed
+  }
+
+  @Test
+  void handlePaymentCompletion_shouldUpdateOrderToPaid_whenPaymentSucceeds() {
+    // Given
+    Order order = new Order();
+    order.setId(orderId);
+    order.setStatus(Status.CREATED);
+    when(orderRepository.findByIdAndDeletedFalse(orderId)).thenReturn(Optional.of(order));
+
+    // When
+    orderService.handlePaymentCompletion(orderId, PaymentStatus.SUCCESS);
+
+    // Then
+    assertThat(order.getStatus()).isEqualTo(Status.PAID);
+    verify(orderRepository).save(order);
   }
 
   @Test
