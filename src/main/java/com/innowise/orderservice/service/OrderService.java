@@ -1,5 +1,6 @@
 package com.innowise.orderservice.service;
 
+import com.innowise.commonstarter.model.enums.PaymentStatus;
 import com.innowise.orderservice.model.dto.OrderWithUserDto;
 import com.innowise.orderservice.model.dto.request.OrderCreationDto;
 import com.innowise.orderservice.model.dto.request.OrderUpdateDto;
@@ -21,4 +22,6 @@ public interface OrderService {
   OrderWithUserDto updateOrder(UUID id, OrderUpdateDto updateDto);
 
   void deleteOrder(UUID id);
+
+  void handlePaymentCompletion(UUID orderId, PaymentStatus paymentStatus);
 }
