@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -109,6 +110,67 @@ class OrderServiceImplTest {
   }
 
   @Test
+  void createOrder_shouldThrowWhenDuplicateItemIds() {
+    OrderCreationDto creationDto = new OrderCreationDto("john@example.com",
+        List.of(
+            new OrderItemCreationDto(itemId1, 2),
+            new OrderItemCreationDto(itemId1, 1)
+        ));
+
+    when(userServiceGateway.fetchUserByEmail("john@example.com")).thenReturn(userDto);
+
+    assertThatThrownBy(() -> orderService.createOrder(creationDto))
+        .isInstanceOf(OrderServiceException.class)
+        .hasMessageContaining("Duplicate item IDs are not allowed");
+  }
+
+  @Test
+  void createOrder_shouldThrowWhenSomeItemsNotFound() {
+    OrderCreationDto creationDto = new OrderCreationDto("john@example.com",
+        List.of(
+            new OrderItemCreationDto(itemId1, 2),
+            new OrderItemCreationDto(itemId2, 1)
+        ));
+
+    when(userServiceGateway.fetchUserByEmail("john@example.com")).thenReturn(userDto);
+    when(itemRepository.findAllById(Set.of(itemId1, itemId2))).thenReturn(List.of(item1));
+
+    assertThatThrownBy(() -> orderService.createOrder(creationDto))
+        .isInstanceOf(OrderServiceException.class)
+        .hasMessageContaining("Some items not found");
+  }
+
+  @Test
+  void handlePaymentCompletion_shouldThrowWhenUnsupportedPaymentStatus() {
+    Order order = buildOrder(Status.CREATED);
+    when(orderRepository.findByIdAndDeletedFalse(orderId)).thenReturn(Optional.of(order));
+
+    assertThatThrownBy(() -> orderService.handlePaymentCompletion(orderId, PaymentStatus.PENDING))
+        .isInstanceOf(OrderServiceException.class)
+        .hasMessageContaining("Unsupported payment status");
+  }
+
+  @Test
+  void handlePaymentCompletion_shouldSkipUpdateWhenAlreadyInTargetStatus() {
+    Order order = buildOrder(Status.PAID);
+    when(orderRepository.findByIdAndDeletedFalse(orderId)).thenReturn(Optional.of(order));
+
+    orderService.handlePaymentCompletion(orderId, PaymentStatus.SUCCESS);
+
+    verify(orderRepository, never()).save(any(Order.class));
+  }
+
+  @Test
+  void handlePaymentCompletion_shouldThrowWhenInvalidTransition() {
+    Order order = buildOrder(Status.DELIVERED);
+    when(orderRepository.findByIdAndDeletedFalse(orderId)).thenReturn(Optional.of(order));
+
+    assertThatThrownBy(() -> orderService.handlePaymentCompletion(orderId, PaymentStatus.SUCCESS))
+        .isInstanceOf(OrderServiceException.class)
+        .hasMessageContaining("Cannot transition from DELIVERED to PAID");
+  }
+
+  @Test
   void createOrder_shouldThrowWhenItemsEmpty() {
     when(userServiceGateway.fetchUserByEmail("john@example.com")).thenReturn(userDto);
     OrderCreationDto dto = new OrderCreationDto("john@example.com", List.of());
@@ -158,7 +220,7 @@ class OrderServiceImplTest {
     // Given
     Order order = new Order();
     order.setId(orderId);
-    order.setStatus(Status.CREATED); // or any status that can transition to PAYMENT_FAILED
+    order.setStatus(Status.CREATED);
     when(orderRepository.findByIdAndDeletedFalse(orderId)).thenReturn(Optional.of(order));
 
     // When
@@ -167,7 +229,6 @@ class OrderServiceImplTest {
     // Then
     assertThat(order.getStatus()).isEqualTo(Status.PAYMENT_FAILED);
     verify(orderRepository).save(order);
-    // The log line will be executed
   }
 
   @Test
