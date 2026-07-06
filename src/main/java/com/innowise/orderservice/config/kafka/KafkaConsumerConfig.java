@@ -27,8 +27,8 @@ public class KafkaConsumerConfig {
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     props.put(ConsumerConfig.GROUP_ID_CONFIG, "order-service-group");
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-    props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+    props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.innowise.commonstarter.model.dto.event");
     return new DefaultKafkaConsumerFactory<>(props);
   }
 
@@ -37,7 +37,6 @@ public class KafkaConsumerConfig {
     ConcurrentKafkaListenerContainerFactory<String, PaymentCompletedEvent> factory =
         new ConcurrentKafkaListenerContainerFactory<>();
     factory.setConsumerFactory(consumerFactory());
-    factory.setRecordMessageConverter(kafkaMessageConverter());
     return factory;
   }
 
